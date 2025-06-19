@@ -7,7 +7,7 @@ import wave
 from whisper_cpp_python import Whisper
 from piper import PiperVoice
 
-def record_audio(filename="input.wav", duration=5, sample_rate=16000, device_index=None):
+def record_audio(filename="input.wav", duration=2, sample_rate=16000, device_index=None):
     """
     Records audio from the microphone and saves it to a WAV file.
     You can specify a device_index; otherwise, it uses the system's default input device.
