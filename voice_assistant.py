@@ -9,6 +9,7 @@ import queue
 import time
 from whisper_cpp_python import Whisper
 from piper import PiperVoice
+import tempfile
 
 class OptimizedVoiceAssistant:
     def __init__(self, whisper_model="ggml-base.en.bin", piper_model="en_US-joe-medium.onnx"):
@@ -50,16 +51,16 @@ class OptimizedVoiceAssistant:
 
     def record_audio(self, filename=None, duration=5, device_index=None):
         """
-        Records audio from the microphone and saves it to a WAV file.
+        Records audio from the microphone and saves it to a temporary WAV file.
         Optimized version with better buffer management.
         """
         if filename is None:
-            filename = f"input_{int(time.time())}.wav"
-        
+            # Use a temporary file for audio
+            temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+            filename = temp_file.name
+            temp_file.close()
         print("Recording...")
-        
         try:
-            # Use optimized recording with smaller chunks for lower latency
             recording = sd.rec(
                 int(duration * self.sample_rate), 
                 samplerate=self.sample_rate, 
@@ -68,12 +69,9 @@ class OptimizedVoiceAssistant:
                 device=device_index
             )
             sd.wait()  # Wait until recording is finished
-            
-            # Save as WAV file
             wav.write(filename, self.sample_rate, recording)
             print(f"Recording finished and saved to {filename}")
             return filename
-            
         except Exception as e:
             print(f"Error during recording: {e}")
             return None
@@ -85,34 +83,29 @@ class OptimizedVoiceAssistant:
         if not self.whisper:
             print("Whisper model not loaded")
             return None
-        
         print("Transcribing audio...")
         start_time = time.time()
-        
         try:
-            # Use optimized parameters for faster inference
-            result = self.whisper.transcribe(
-                audio_file,
-                beam_size=1,        # Greedy decoding (faster than beam search)
-                best_of=1,          # Single pass
-                temperature=0.0,    # Deterministic output
-            )
-            
+            # Remove unsupported parameters for your Whisper version
+            result = self.whisper.transcribe(audio_file)
             text = result["text"].strip()
-            
             # Clean up audio file
             try:
                 if os.path.exists(audio_file):
                     os.remove(audio_file)
-            except:
-                pass
-            
+            except Exception as e:
+                print(f"Error deleting audio file: {e}")
             transcribe_time = time.time() - start_time
             print(f"Transcription completed in {transcribe_time:.2f}s: {text}")
             return text
-            
         except Exception as e:
             print(f"Error during transcription: {e}")
+            # Clean up audio file even on error
+            try:
+                if os.path.exists(audio_file):
+                    os.remove(audio_file)
+            except Exception as e2:
+                print(f"Error deleting audio file after error: {e2}")
             return None
 
     def get_llm_response(self, text):
@@ -397,28 +390,10 @@ def text_to_speech(text, model_path="en_US-joe-medium.onnx", output_file="output
 
 def main():
     """
-    Main function with multiple options.
-    Choose the version that works best for you.
+    Main function: always use the fastest threaded mode, no prompt.
     """
     assistant = OptimizedVoiceAssistant()
-    
-    print("\nChoose optimization level:")
-    print("1. Original style (easiest migration)")
-    print("2. Simple optimized (recommended)")
-    print("3. Full threaded (maximum performance)")
-    
-    try:
-        choice = input("Enter choice (1-3) or press Enter for option 2: ").strip()
-        
-        if choice == "1":
-            assistant.run_original_style()
-        elif choice == "3":
-            assistant.run_threaded()
-        else:  # Default to option 2
-            assistant.run_simple()
-            
-    except KeyboardInterrupt:
-        print("\nGoodbye!")
+    assistant.run_threaded()
 
 if __name__ == "__main__":
     main()
