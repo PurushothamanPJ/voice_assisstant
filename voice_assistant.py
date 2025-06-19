@@ -7,7 +7,7 @@ import wave
 from whisper_cpp_python import Whisper
 from piper import PiperVoice
 
-def record_audio(filename="input.wav", duration=2, sample_rate=16000, device_index=None):
+def record_audio(filename="input.wav", duration=5, sample_rate=16000, device_index=None):
     """
     Records audio from the microphone and saves it to a WAV file.
     You can specify a device_index; otherwise, it uses the system's default input device.
@@ -48,6 +48,15 @@ def get_llm_response(text):
         )
         llm_response = response['message']['content']
         print(f"Ollama response: {llm_response}")
+
+        # Extract only the first assistant reply
+        if "Assistant:" in llm_response:
+            # Split at 'Assistant:' and take the first reply after it
+            parts = llm_response.split("Assistant:")
+            if len(parts) > 1:
+                first_reply = parts[1].split("User:")[0].strip()
+                return first_reply
+        # Fallback: return the whole response if format is unexpected
         return llm_response
     except Exception as e:
         print(f"Error communicating with Ollama: {e}")
