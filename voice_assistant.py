@@ -38,12 +38,12 @@ def speech_to_text(audio_file):
 
 def get_llm_response(text):
     """
-    Gets a response from the Ollama model.
+    Gets a response from the Ollama model using TinyLlama.
     """
     print("Getting response from Ollama...")
     try:
         response = ollama.chat(
-            model='gemma:2b',
+            model='tinyllama',
             messages=[{'role': 'user', 'content': text}]
         )
         llm_response = response['message']['content']
@@ -51,7 +51,7 @@ def get_llm_response(text):
         return llm_response
     except Exception as e:
         print(f"Error communicating with Ollama: {e}")
-        print("Please ensure Ollama is running and you have pulled a model (e.g., `ollama run gemma:2b`).")
+        print("Please ensure Ollama is running and you have pulled the tinyllama model (e.g., `ollama pull tinyllama`).")
         return "I am having trouble connecting to my brain."
 
 
