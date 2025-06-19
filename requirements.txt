@@ -4,3 +4,5 @@ sounddevice
 scipy
 numpy
 ollama 
+flask
+requests
